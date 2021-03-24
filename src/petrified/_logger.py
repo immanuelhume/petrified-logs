@@ -6,11 +6,7 @@ import yaml
 from pathlib import Path
 import time
 from string import Template
-
-CONFIG_FILE = Path(__file__).parent / 'conf.yaml'
-with open(CONFIG_FILE, 'r') as f:
-    config = yaml.safe_load(f.read())
-    logging.config.dictConfig(config)
+import config
 
 
 def f():
@@ -23,12 +19,6 @@ class Logger:
 
     _attr_path = []
 
-    def get_emitter(self, level):
-        levels = {
-            'debug': logging.debug
-        }
-        return levels[level]
-
     def __getattr__(self, attr):
         self._attr_path.append(attr)
         return self
@@ -36,36 +26,41 @@ class Logger:
     def __call__(self, msg):
         caller_info = inspect.stack()[1]
 
+        level = self._attr_path[0]
+
         log_record = {
             'module': caller_info[0].f_globals['__name__'],
             'pathname': caller_info.filename,
             'funcname': caller_info.function,
             'lineno': caller_info.lineno,
             'asctime': time.asctime(),
-            'levelname': self._attr_path[0].upper(),
+            'levelname': level.upper(),
             'message': msg
         }
 
-        formatted_msg = self._apply_format(*self._attr_path, **log_record)
+        styles = self._attr_path[1:]
+        self._attr_path = []
 
-        if self._attr_path[0] == 'debug':
-            try:
-                self._attr_path[1]
-            except IndexError:
-                formatted_msg = self._apply_format('debug', **log_record)
-                sys.stdout.write(formatted_msg)
+        formatted_msg = self._apply_format(level, *styles, **log_record)
 
-    def _apply_format(self, *styles, **log_record):
-        #t = self.styles[style]
+        sys.stdout.write(formatted_msg)
+
+    def _apply_format(self, level, *styles, **log_record):
+        t = config.apply_style(level, *styles)
         return t.substitute(log_record)
-
-    styles = {
-        # contains mapping of styles
-        # e.g. 'debug': Template(...)
-        'debug': Template('$levelname - $message @ $lineno')
-    }
 
 
 if __name__ == '__main__':
     logger = Logger()
+    print('        ***normal logs***')
     logger.debug('debug message')
+    logger.info('info message')
+    logger.warning('warning message')
+    logger.error('error message')
+    logger.critical('critical message')
+    print('        ***custom color logs***')
+    logger.debug.bold.red('bold red debug message')
+    logger.critical.cyan('cyan critical message')
+    print('        ***custom font and color***')
+    logger.debug.yellow.bold('bold yellow debug message')
+    logger.error.underline.magenta('underlined magenta error message')
