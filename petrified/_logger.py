@@ -36,6 +36,7 @@ class Logger:
 
         formatted_msg = self._apply_format(level, *styles, **log_record)
 
+        # TODO implement write to file capability
         sys.stdout.write(formatted_msg)
 
     def _apply_format(self,

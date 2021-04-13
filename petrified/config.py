@@ -3,6 +3,28 @@ import sys
 from string import Template
 from typing import List
 
+# TODO implement fine-grain manipulation, e.g. coloring individual words
+# TODO separate config into a yaml file
+# TODO add bg color codes
+
+# ANSI escape codes for styles are specified here
+STYLES = {
+    'black': 30,
+    'red': 31,
+    'green': 32,
+    'yellow': 33,
+    'blue': 34,
+    'magenta': 35,
+    'cyan': 36,
+    'white': 37,
+
+    'bold': 1,
+    'underline': 4,
+}
+# I want this: <red><bgblack>$levelname</bgblack></red>
+# from loguru r"\\?</?((?:[fb]g\s)?[^<>\s]*)>"
+
+
 # `root` is the default format
 root = '$levelname - $message @ line $lineno of $module'
 
@@ -31,21 +53,6 @@ LEVELS = {
     }
 }
 
-# ANSI escape codes for styles are specified here
-STYLES = {
-    'black': 30,
-    'red': 31,
-    'green': 32,
-    'yellow': 33,
-    'blue': 34,
-    'magenta': 35,
-    'cyan': 36,
-    'white': 37,
-
-    'bold': 1,
-    'underline': 4,
-}
-
 
 def apply_style(level: str, *styles: List) -> str:
     if not styles:
@@ -55,7 +62,8 @@ def apply_style(level: str, *styles: List) -> str:
     else:
         style_template = get_styled_template(*styles)
 
-    return Template(style_template.substitute(logtemplate=LEVELS[level]['template']))
+    return Template(style_template.substitute(
+        logtemplate=LEVELS[level]['template']))
 
 
 def get_styled_template(*styles):
