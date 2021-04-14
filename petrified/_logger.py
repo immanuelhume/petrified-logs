@@ -12,7 +12,8 @@ class Logger:
     _attr_path = []
 
     def __getattr__(self, attr):
-        self._attr_path.append(attr)
+        if not attr[0] == '_':
+            self._attr_path.append(attr)
         return self
 
     # this is ran on the last attribute
@@ -37,7 +38,7 @@ class Logger:
         formatted_msg = self._apply_format(level, *styles, **log_record)
 
         # TODO implement write to file capability
-        sys.stdout.write(formatted_msg)
+        print(formatted_msg)
 
     def _apply_format(self,
                       level: str,

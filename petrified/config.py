@@ -1,85 +1,54 @@
-import os
-import sys
+import re
 from string import Template
-from typing import List
 
-# TODO implement fine-grain manipulation, e.g. coloring individual words
-# TODO separate config into a yaml file
-# TODO add bg color codes
-
-# ANSI escape codes for styles are specified here
-STYLES = {
-    'black': 30,
-    'red': 31,
-    'green': 32,
-    'yellow': 33,
-    'blue': 34,
-    'magenta': 35,
-    'cyan': 36,
-    'white': 37,
-
-    'bold': 1,
-    'underline': 4,
-}
-# I want this: <red><bgblack>$levelname</bgblack></red>
-# from loguru r"\\?</?((?:[fb]g\s)?[^<>\s]*)>"
+from .color_codes import ANSI_CODES, ESCAPE_CODES
+from .templates import LEVELS
 
 
-# `root` is the default format
-root = '$levelname - $message @ line $lineno of $module'
+def tag_convert(exp: str) -> str:
+    ansied_exp = exp
+    loci = {}
+    tag_rgx = re.compile(r"\\?<((?:[fb]g\s)?[^<>/\s]*)>")
+
+    for match in tag_rgx.finditer(exp):
+        markup, tag = match.group(0), match.group(1)
+        closing_tag = f'</{tag}>'
+        close_start = exp.find(closing_tag, match.end())
+
+        appends = []
+        extra_ansi = ''
+
+        for prev_tag in loci:
+            if prev_tag > close_start:
+                appends.append(loci[prev_tag])
+
+        if appends:
+            codes = ';'.join([f'{ANSI_CODES[tag]}' for tag in appends])
+            extra_ansi = f'\x1b[{codes}m'
+
+        loci[close_start] = tag
+
+        ansied_exp = ansied_exp.replace(markup, ESCAPE_CODES[tag], 1)
+        ansied_exp = ansied_exp.replace(closing_tag,
+                                        f'\x1b[0m{extra_ansi}',
+                                        1)
+
+    return ansied_exp
 
 
-# levels are specified as tuples of format followed by styles
-LEVELS = {
-    'debug': {
-        'template': root,
-        'styles': ['cyan']
-    },
-    'info': {
-        'template': root,
-        'styles': ['green']
-    },
-    'warning': {
-        'template': root,
-        'styles': ['yellow', 'underline']
-    },
-    'error': {
-        'template': root,
-        'styles': ['red']
-    },
-    'critical': {
-        'template': root,
-        'styles': ['red', 'bold']
-    }
-}
-
-
-def apply_style(level: str, *styles: List) -> str:
-    if not styles:
-        # styles list is empty, get default styles
-        default_styles = LEVELS[level]['styles']
-        style_template = get_styled_template(*default_styles)
+# these are overriding styles
+# if no overriding styles are provided, use default template
+# ANSI codes are applied here
+def apply_style(level: str, *styles) -> str:
+    if styles:
+        styled_template = get_styled_template(*styles)
+        return Template(styled_template.substitute(
+            logtemplate=(getattr(LEVELS, level))))
     else:
-        style_template = get_styled_template(*styles)
-
-    return Template(style_template.substitute(
-        logtemplate=LEVELS[level]['template']))
+        return Template(tag_convert(getattr(LEVELS, level)))
 
 
 def get_styled_template(*styles):
-    codes = ';'.join([repr(STYLES[style]) for style in styles])
+    codes = ';'.join([repr(ANSI_CODES[style]) for style in styles])
     wrapped = f'\x1b[{codes}m$logtemplate\x1b[0m\n'
     return Template(wrapped)
-
-
-def supports_color():
-    """
-    Returns True if the running system's terminal supports color, and False
-    otherwise.
-    """
-    plat = sys.platform
-    supported_platform = plat != 'Pocket PC' and (plat != 'win32' or
-                                                  'ANSICON' in os.environ)
-    # isatty is not always implemented, #6223.
-    is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
-    return supported_platform and is_a_tty
