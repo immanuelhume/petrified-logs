@@ -1,0 +1,2 @@
+class NoClosingTagError(Exception):
+    pass

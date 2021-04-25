@@ -2,18 +2,11 @@ import re
 from string import Template
 
 from .color_codes import ANSI_CODES, ESCAPE_CODES
+from .errors import NoClosingTagError
 from .templates import LEVELS
 
 OPEN_TAG_RGX = r"\\?<((?:[fb]g\s)?[^<?>/\s]*)>"
 TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)>"
-
-
-class NoClosingTagError(Exception):
-    def __init__(self, tag):
-        self.tag = tag
-
-    def __repr__(self):
-        return f'no corresponding closing tag for tag {self.tag}'
 
 
 def tag_convert(exp: str) -> str:
@@ -27,7 +20,7 @@ def tag_convert(exp: str) -> str:
         close_start = exp.find(closing_tag, match.end())
 
         if close_start == -1:
-            raise NoClosingTagError(tag)  # no closing tag
+            raise NoClosingTagError(f'no corresponding closing tag for tag {markup}')  # no closing tag
 
         appends = []
         extra_ansi = ''
@@ -54,9 +47,8 @@ def strip_tags(exp: str) -> str:
     return re.sub(TAG_RGX, '', exp)
 
 
-# these are overriding styles
-# if no overriding styles are provided, use default template
 # ANSI codes are applied here
+# is styles are provided, will override default
 def apply_style(level: str, *styles) -> str:
     if styles:
         styled_template = get_styled_template(*styles)

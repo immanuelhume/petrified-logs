@@ -5,7 +5,7 @@ from petrified import logger
 
 def main():
     logger.test('test message')
-    logger.debug.underline('debug message')
+    logger.debug('debug message')
 
 
 if __name__ == '__main__':
