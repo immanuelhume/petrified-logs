@@ -1,5 +1,6 @@
+# TODO emoji logging!!
+
 import inspect
-import sys
 import time
 from typing import List
 

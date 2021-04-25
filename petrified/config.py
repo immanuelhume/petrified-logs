@@ -4,16 +4,30 @@ from string import Template
 from .color_codes import ANSI_CODES, ESCAPE_CODES
 from .templates import LEVELS
 
+OPEN_TAG_RGX = r"\\?<((?:[fb]g\s)?[^<?>/\s]*)>"
+TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)>"
+
+
+class NoClosingTagError(Exception):
+    def __init__(self, tag):
+        self.tag = tag
+
+    def __repr__(self):
+        return f'no corresponding closing tag for tag {self.tag}'
+
 
 def tag_convert(exp: str) -> str:
     ansied_exp = exp
     loci = {}
-    tag_rgx = re.compile(r"\\?<((?:[fb]g\s)?[^<>/\s]*)>")
 
-    for match in tag_rgx.finditer(exp):
+    for match in re.finditer(OPEN_TAG_RGX, exp):
         markup, tag = match.group(0), match.group(1)
+
         closing_tag = f'</{tag}>'
         close_start = exp.find(closing_tag, match.end())
+
+        if close_start == -1:
+            raise NoClosingTagError(tag)  # no closing tag
 
         appends = []
         extra_ansi = ''
@@ -36,14 +50,19 @@ def tag_convert(exp: str) -> str:
     return ansied_exp
 
 
+def strip_tags(exp: str) -> str:
+    return re.sub(TAG_RGX, '', exp)
+
+
 # these are overriding styles
 # if no overriding styles are provided, use default template
 # ANSI codes are applied here
 def apply_style(level: str, *styles) -> str:
     if styles:
         styled_template = get_styled_template(*styles)
+        cleaned_template = strip_tags(getattr(LEVELS, level))
         return Template(styled_template.substitute(
-            logtemplate=(getattr(LEVELS, level))))
+            logtemplate=cleaned_template))
     else:
         return Template(tag_convert(getattr(LEVELS, level)))
 
