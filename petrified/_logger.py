@@ -5,7 +5,8 @@ import time
 from typing import List
 
 from . import config
-from .config import tag_convert
+from .color_codes import ANSI_CODES
+from .emojis import EMOJIS
 
 
 class Logger:
@@ -31,16 +32,26 @@ class Logger:
             'lineno': caller_info.lineno,
             'asctime': time.asctime(),
             'levelname': level.upper(),
-            'message': tag_convert(msg)
+            'message': config.tag_convert(msg)
         }
 
-        styles = self._attr_path[1:]
-        self._attr_path = []
+        tail_emojis, overriding_styles = [], []
+        # now categorize the options
+        for option in self._attr_path[1:]:
+            if hasattr(EMOJIS, option):
+                tail_emojis.append(option)
+            elif option in ANSI_CODES:
+                overriding_styles.append(option)
 
-        formatted_msg = self._apply_format(level, *styles, **log_record)
+        self._attr_path = []  # reset the attrs
+
+        formatted_msg = self._apply_format(level,
+                                           *overriding_styles,
+                                           **log_record)
 
         # TODO implement write to file capability
-        print(formatted_msg)
+        print(formatted_msg, ' '.join(
+            [getattr(EMOJIS, emoji) for emoji in tail_emojis]))
 
     def _apply_format(self,
                       level: str,

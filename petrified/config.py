@@ -2,6 +2,7 @@ import re
 from string import Template
 
 from .color_codes import ANSI_CODES, ESCAPE_CODES
+from .emojis import EMOJIS
 from .templates import LEVELS
 
 OPEN_TAG_RGX = r"\\?<((?:[fb]g\s)?[^<?>/\s]*)>"
@@ -44,6 +45,10 @@ def tag_convert(exp: str) -> str:
 
 def strip_tags(exp: str) -> str:
     return re.sub(TAG_RGX, '', exp)
+
+
+def is_emoji(opt: str) -> bool:
+    return hasattr(EMOJIS, opt)
 
 
 # if styles are provided, will override default

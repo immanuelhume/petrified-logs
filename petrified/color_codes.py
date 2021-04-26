@@ -1,11 +1,6 @@
 from typing import Dict
 
-
-def to_ansi_escape(codes: Dict) -> Dict:
-    """Wraps numbers with the escape characters"""
-    return {name: f'\x1b[{code}m' for name, code in codes.items()}
-
-
+# add any other ANSI codes here
 ANSI_CODES = {
     'black': 30,
     'red': 31,
@@ -29,6 +24,11 @@ ANSI_CODES = {
     'bold': 1,
     'underline': 4,
 }
+
+
+def to_ansi_escape(codes: Dict) -> Dict:
+    """Wraps numbers with the escape characters"""
+    return {name: f'\x1b[{code}m' for name, code in codes.items()}
 
 
 ESCAPE_CODES = to_ansi_escape(ANSI_CODES)

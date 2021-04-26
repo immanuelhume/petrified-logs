@@ -4,8 +4,7 @@ from petrified import logger
 
 
 def main():
-    logger.test('test message')
-    logger.debug('debug message')
+    logger.debug.lenny('lenny debug')
     logger.critical('this <red>word</red> should be red')
 
 
