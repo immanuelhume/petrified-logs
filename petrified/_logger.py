@@ -5,6 +5,7 @@ import time
 from typing import List
 
 from . import config
+from .config import tag_convert
 
 
 class Logger:
@@ -30,7 +31,7 @@ class Logger:
             'lineno': caller_info.lineno,
             'asctime': time.asctime(),
             'levelname': level.upper(),
-            'message': msg
+            'message': tag_convert(msg)
         }
 
         styles = self._attr_path[1:]

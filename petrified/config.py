@@ -46,9 +46,8 @@ def strip_tags(exp: str) -> str:
     return re.sub(TAG_RGX, '', exp)
 
 
-# ANSI codes are applied here
-# is styles are provided, will override default
-def apply_style(level: str, *styles) -> str:
+# if styles are provided, will override default
+def apply_style(level: str, *styles) -> Template:
     if styles:
         styled_template = get_styled_template(*styles)
         cleaned_template = strip_tags(getattr(LEVELS, level))
@@ -58,7 +57,7 @@ def apply_style(level: str, *styles) -> str:
         return Template(tag_convert(getattr(LEVELS, level)))
 
 
-def get_styled_template(*styles):
+def get_styled_template(*styles) -> Template:
     codes = ';'.join([repr(ANSI_CODES[style]) for style in styles])
     wrapped = f'\x1b[{codes}m$logtemplate\x1b[0m\n'
     return Template(wrapped)
