@@ -2,7 +2,6 @@ import re
 from string import Template
 
 from .color_codes import ANSI_CODES, ESCAPE_CODES
-from .errors import NoClosingTagError
 from .templates import LEVELS
 
 OPEN_TAG_RGX = r"\\?<((?:[fb]g\s)?[^<?>/\s]*)>"
@@ -20,7 +19,7 @@ def tag_convert(exp: str) -> str:
         close_start = exp.find(closing_tag, match.end())
 
         if close_start == -1:
-            raise NoClosingTagError(f'no corresponding closing tag for tag {markup}')  # no closing tag
+            continue
 
         appends = []
         extra_ansi = ''
