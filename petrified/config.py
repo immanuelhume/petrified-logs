@@ -6,13 +6,15 @@ from .emojis import EMOJIS
 from .templates import LEVELS
 
 OPEN_TAG_RGX = r"\\?<((?:[fb]g\s)?[^<?>/\s]*)>"
-TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)>"
+TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)/?>"
+SELF_CLOSING_TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)/>"
 
 
 def tag_convert(exp: str) -> str:
-    ansied_exp = exp
+    converted_exp = exp
     loci = {}
 
+    # first grab the styles
     for match in re.finditer(OPEN_TAG_RGX, exp):
         markup, tag = match.group(0), match.group(1)
 
@@ -35,12 +37,19 @@ def tag_convert(exp: str) -> str:
 
         loci[close_start] = tag
 
-        ansied_exp = ansied_exp.replace(markup, ESCAPE_CODES[tag], 1)
-        ansied_exp = ansied_exp.replace(closing_tag,
-                                        f'\x1b[0m{extra_ansi}',
-                                        1)
+        converted_exp = converted_exp.replace(markup, ESCAPE_CODES[tag], 1)
+        converted_exp = converted_exp.replace(closing_tag,
+                                              f'\x1b[0m{extra_ansi}',
+                                              1)
 
-    return ansied_exp
+    # now grab the emojis
+    for match in re.finditer(SELF_CLOSING_TAG_RGX, exp):
+        markup, tag = match.group(0), match.group(1)
+        emoji = getattr(EMOJIS, tag)
+        if emoji:
+            converted_exp = converted_exp.replace(markup, emoji, 1)
+
+    return converted_exp
 
 
 def strip_tags(exp: str) -> str:
