@@ -2,7 +2,7 @@
 
 import inspect
 import time
-from typing import List
+from typing import Dict, List
 
 from . import config
 from .color_codes import ANSI_CODES
@@ -23,7 +23,7 @@ class Logger:
     def __call__(self, msg):
         caller_info = inspect.stack()[1]
 
-        level = self._attr_path[0]
+        level = self._attr_path[0]  # level must be the first attribute passed
 
         log_record = {
             'module': caller_info[0].f_globals['__name__'],
@@ -35,8 +35,8 @@ class Logger:
             'message': config.tag_convert(msg)
         }
 
+        # separate emojis from styles
         tail_emojis, overriding_styles = [], []
-        # now categorize the options
         for option in self._attr_path[1:]:
             if hasattr(EMOJIS, option):
                 tail_emojis.append(option)
@@ -46,8 +46,8 @@ class Logger:
         self._attr_path = []  # reset the attrs
 
         formatted_msg = self._apply_format(level,
-                                           *overriding_styles,
-                                           **log_record)
+                                           overriding_styles,
+                                           log_record)
 
         # TODO implement write to file capability
         print(formatted_msg, ' '.join(
@@ -55,7 +55,7 @@ class Logger:
 
     def _apply_format(self,
                       level: str,
-                      *styles: List,
-                      **log_record) -> str:
-        t = config.apply_style(level, *styles)
+                      styles: List,
+                      log_record: Dict) -> str:
+        t = config.apply_format(level, styles)
         return t.substitute(log_record)

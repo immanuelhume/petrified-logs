@@ -1,12 +1,13 @@
 import re
 from string import Template
+from typing import List
 
 from .color_codes import ANSI_CODES, ESCAPE_CODES
 from .emojis import EMOJIS
 from .templates import LEVELS
 
 OPEN_TAG_RGX = r"\\?<((?:[fb]g\s)?[^<?>/\s]*)>"
-TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)/?>"
+GENERIC_TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)/?>"
 SELF_CLOSING_TAG_RGX = r"\\?</?((?:[fb]g\s)?[^<>/\s]*)/>"
 
 
@@ -52,26 +53,18 @@ def tag_convert(exp: str) -> str:
     return converted_exp
 
 
-def strip_tags(exp: str) -> str:
-    return re.sub(TAG_RGX, '', exp)
-
-
-def is_emoji(opt: str) -> bool:
-    return hasattr(EMOJIS, opt)
-
-
 # if styles are provided, will override default
-def apply_style(level: str, *styles) -> Template:
+def get_styled_template(styles: List) -> Template:
+    codes = ';'.join([repr(ANSI_CODES[style]) for style in styles])
+    wrapped = f'\x1b[{codes}m$logtemplate\x1b[0m\n'
+    return Template(wrapped)
+
+
+def apply_format(level: str, styles: List) -> Template:
     if styles:
-        styled_template = get_styled_template(*styles)
-        cleaned_template = strip_tags(getattr(LEVELS, level))
+        styled_template = get_styled_template(styles)
+        cleaned_template = re.sub(GENERIC_TAG_RGX, '', getattr(LEVELS, level))
         return Template(styled_template.substitute(
             logtemplate=cleaned_template))
     else:
         return Template(tag_convert(getattr(LEVELS, level)))
-
-
-def get_styled_template(*styles) -> Template:
-    codes = ';'.join([repr(ANSI_CODES[style]) for style in styles])
-    wrapped = f'\x1b[{codes}m$logtemplate\x1b[0m\n'
-    return Template(wrapped)
